@@ -31,8 +31,7 @@ app.use("/api/reports", reportRoutes);
 app.use("/api/users", userRoutes);
 
 // ================= CRON JOB =================
-require("./cron/cronJobs"); // ✅ handles email reminders
-
+require("./cron/cronJobs");
 // ================= SERVER =================
 const PORT = process.env.PORT || 5000;
 
