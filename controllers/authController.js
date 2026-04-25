@@ -46,33 +46,34 @@ exports.register = async (req, res) => {
 // ================= LOGIN =================
 exports.login = async (req, res) => {
   try {
+    console.log("LOGIN BODY:", req.body);
+
     const { email, password } = req.body;
 
-    // Validation
     if (!email || !password) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Check user
     const user = await User.findOne({ email });
+    console.log("USER FOUND:", user);
+
     if (!user) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({ message: "User not found" });
     }
 
-    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log("PASSWORD MATCH:", isMatch);
+
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({ message: "Wrong password" });
     }
 
-    // Generate token
     const token = jwt.sign(
       { id: user._id },
-      JWT_SECRET,
+      process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
-    // Remove password before sending user
     const { password: _, ...userData } = user._doc;
 
     res.status(200).json({
@@ -81,6 +82,7 @@ exports.login = async (req, res) => {
     });
 
   } catch (error) {
+    console.log("LOGIN ERROR:", error);
     res.status(500).json({
       message: "Server Error",
       error: error.message,
