@@ -217,12 +217,24 @@ exports.getComments = async (req, res) => {
 };
 
 // ================= FILE UPLOAD =================
+
 exports.uploadFile = async (req, res) => {
   try {
+    console.log("FILE:", req.file);
+
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded ❌" });
+    }
+
     const task = await Task.findById(req.params.id);
 
     if (!task) {
-      return res.status(404).json({ message: "Task not found" });
+      return res.status(404).json({ message: "Task not found ❌" });
+    }
+
+    // 🔥 FIX: always ensure array exists
+    if (!task.attachments) {
+      task.attachments = [];
     }
 
     task.attachments.push({
@@ -232,14 +244,16 @@ exports.uploadFile = async (req, res) => {
 
     await task.save();
 
-    res.json(task);
+    res.json({ message: "Upload success ✅" });
+
   } catch (err) {
+    console.log("UPLOAD ERROR:", err);
     res.status(500).json({ message: err.message });
   }
 };
 
-
 // ================= PROFILE =================
+
 exports.getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");

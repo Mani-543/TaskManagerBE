@@ -3,6 +3,7 @@ const router = express.Router();
 
 const authMiddleware = require("../middleware/auth");
 const upload = require("../middleware/upload");
+const Task = require("../models/Task");
 
 const {
   createTask,
@@ -39,11 +40,32 @@ router.post("/:id/comments", authMiddleware, addComment);
 router.get("/:id/comments", authMiddleware, getComments);
 
 // ================= FILE UPLOAD =================
-router.post(
-  "/:id/upload",
+
+// UPLOAD ROUTE
+router.post("/:id/upload",
   authMiddleware,
   upload.single("file"),
-  uploadFile
+  async (req, res) => {
+    try {
+      console.log("UPLOAD HIT");
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const task = await Task.findByIdAndUpdate(
+        req.params.id,
+        { file: req.file.path },
+        { new: true }
+      );
+
+      res.json({ message: "Upload success", task });
+
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({ message: err.message });
+    }
+  }
 );
 
 module.exports = router;
