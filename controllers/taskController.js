@@ -215,26 +215,7 @@ exports.getComments = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
-// ================= FILE UPLOAD =================
-
-
-exports.uploadFile = async (req, res) => {
-  try {
-    console.log("🔥 UPLOAD ROUTE HIT");
-    console.log("REQ.FILE:", req.file);
-
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded ❌" });
-    }
-
-    res.json({ message: "Upload success ✅" });
-
-  } catch (err) {
-    console.log("UPLOAD ERROR:", err);
-    res.status(500).json({ message: err.message });
-  }
-};
+   
 // ================= PROFILE =================
 
 exports.getProfile = async (req, res) => {
