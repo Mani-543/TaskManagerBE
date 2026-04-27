@@ -26,6 +26,12 @@ app.use("/api/tasks", taskRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/users", userRoutes);
 
+console.log("CLOUDINARY CHECK:", {
+  name: process.env.CLOUD_NAME,
+  key: process.env.CLOUD_API_KEY,
+  secret: process.env.CLOUD_API_SECRET,
+});
+
 // ================= ROOT =================
 app.get("/", (req, res) => {
   res.send("Task Manager API is running 🚀");

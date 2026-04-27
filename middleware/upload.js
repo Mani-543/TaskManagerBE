@@ -5,16 +5,11 @@ const cloudinary = require("../config/cloudinary");
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: "task_manager_files",
+    folder: "task_manager",
     resource_type: "auto",
   },
 });
 
-const upload = multer({
-  storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB
-  },
-});
+const upload = multer({ storage });
 
 module.exports = upload;

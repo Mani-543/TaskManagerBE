@@ -218,31 +218,15 @@ exports.getComments = async (req, res) => {
 
 // ================= FILE UPLOAD =================
 
+
 exports.uploadFile = async (req, res) => {
   try {
-    console.log("FILE:", req.file);
+    console.log("🔥 UPLOAD ROUTE HIT");
+    console.log("REQ.FILE:", req.file);
 
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded ❌" });
     }
-
-    const task = await Task.findById(req.params.id);
-
-    if (!task) {
-      return res.status(404).json({ message: "Task not found ❌" });
-    }
-
-    // 🔥 FIX: always ensure array exists
-    if (!task.attachments) {
-      task.attachments = [];
-    }
-
-    task.attachments.push({
-      filename: req.file.filename,
-      filepath: req.file.path,
-    });
-
-    await task.save();
 
     res.json({ message: "Upload success ✅" });
 
@@ -251,7 +235,6 @@ exports.uploadFile = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 // ================= PROFILE =================
 
 exports.getProfile = async (req, res) => {

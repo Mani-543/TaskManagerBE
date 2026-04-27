@@ -1,10 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const taskController = require("../controllers/taskController");
-const authMiddleware = require("../middleware/auth");
-const upload = require("../middleware/upload");
-const Task = require("../models/Task");
 
+const taskController = require("../controllers/taskController");
+const upload = require("../middleware/upload");
+const authMiddleware = require("../middleware/auth");
 const {
   createTask,
   getTasks,
@@ -44,7 +43,8 @@ router.get("/:id/comments", authMiddleware, getComments);
 router.post(
   "/:id/upload",
   authMiddleware,
-  upload.single("file"),
+  upload.single("file"),   
   taskController.uploadFile
 );
+
 module.exports = router;
