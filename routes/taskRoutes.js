@@ -41,31 +41,10 @@ router.get("/:id/comments", authMiddleware, getComments);
 
 // ================= FILE UPLOAD =================
 
-// UPLOAD ROUTE
-router.post("/:id/upload",
+router.post(
+  "/:id/upload",
   authMiddleware,
   upload.single("file"),
-  async (req, res) => {
-    try {
-      console.log("UPLOAD HIT");
-
-      if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
-      }
-
-      const task = await Task.findByIdAndUpdate(
-        req.params.id,
-        { file: req.file.path },
-        { new: true }
-      );
-
-      res.json({ message: "Upload success", task });
-
-    } catch (err) {
-      console.log(err);
-      res.status(500).json({ message: err.message });
-    }
-  }
+  taskController.uploadFile
 );
-
 module.exports = router;
