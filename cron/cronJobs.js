@@ -4,7 +4,7 @@ const User = require("../models/User");
 const sendEmail = require("../utils/emailService");
 
 // Run every minute (for testing)
-cron.schedule("* * * * *", async () => {
+cron.schedule("0 * * * *", async () => {
   console.log("⏰ Checking task reminders...");
 
   try {
