@@ -1,6 +1,11 @@
 const jwt = require("jsonwebtoken");
 
 const authMiddleware = (req, res, next) => {
+  // Skip auth for preflight requests
+  if (req.method === "OPTIONS") {
+    return next();
+  }
+
   try {
     let token = req.headers.authorization;
 

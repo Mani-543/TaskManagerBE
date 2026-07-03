@@ -7,15 +7,23 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  pool: {
+    maxConnections: 5,
+    maxMessages: 100,
+    rateDelta: 1000,
+    rateLimit: 5,
+  },
 });
 
-// Verify transporter (optional but recommended)
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("❌ Email service error:", error.message);
-  } else {
-    console.log("✅ Email service is ready");
-  }
+// Verify transporter asynchronously (non-blocking)
+setImmediate(() => {
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error("❌ Email service error:", error.message);
+    } else {
+      console.log("✅ Email service is ready");
+    }
+  });
 });
 
 // Send email function

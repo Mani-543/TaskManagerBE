@@ -107,4 +107,8 @@ const taskSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+taskSchema.index({ createdBy: 1 });
+taskSchema.index({ assignedTo: 1 });
+taskSchema.index({ "sharedWith.user": 1 });
+
 module.exports = mongoose.model("Task", taskSchema);

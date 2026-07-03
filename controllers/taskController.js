@@ -11,27 +11,34 @@ exports.createTask = async (req, res) => {
       createdBy: req.user.id,
     });
 
-    await task.save();
+    const savedTask = await task.save();
 
-    // Send email if assigned
+    // Send response immediately
+    res.status(201).json(savedTask);
+
+    // Send email in background (non-blocking with setImmediate)
     if (task.assignedTo) {
-      const user = await User.findById(task.assignedTo);
-
-      if (user?.email) {
-        await sendEmail(
-          user.email,
-          "New Task Assigned",
-          `You have been assigned: ${task.title}`
-        );
-      }
+      setImmediate(async () => {
+        try {
+          const user = await User.findById(task.assignedTo).select("email").lean();
+          if (user?.email) {
+            await sendEmail(
+              user.email,
+              "New Task Assigned",
+              `You have been assigned: ${task.title}`
+            );
+          }
+        } catch (err) {
+          console.log("EMAIL ERROR:", err.message);
+        }
+      });
     }
 
-    res.status(201).json(task);
   } catch (err) {
+    console.log(err);
     res.status(500).json({ message: err.message });
   }
 };
-
 
 // ================= GET TASKS =================
 
@@ -40,6 +47,7 @@ const getTasks = async (req, res) => {
   try {
     const userId = req.user.id;
 
+    // Use lean() for read-only queries for better performance
     const tasks = await Task.find({
       $or: [
         { createdBy: userId },                 // tasks created by user
@@ -50,7 +58,9 @@ const getTasks = async (req, res) => {
       .populate("assignedTo", "name email")
       .populate("createdBy", "name email")
       .populate("sharedWith.user", "name email")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
 
     res.json(tasks);
   } catch (err) {
@@ -65,7 +75,11 @@ exports.getTaskById = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id)
       .populate("comments.user", "name email")
-      .populate("assignedTo", "name email");
+      .populate("assignedTo", "name email")
+      .populate("createdBy", "name email")
+      .populate("sharedWith.user", "name email")
+      .lean()
+      .exec();
 
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
@@ -136,33 +150,44 @@ exports.deleteTask = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-  
+
 //sharetask
 exports.shareTask = async (req, res) => {
   try {
     const taskId = req.params.id;
     const { userId, permission } = req.body;
 
-    const task = await Task.findById(taskId);
+    // Check if already shared
+    const task = await Task.findById(taskId).lean().exec();
 
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    const alreadyShared = task.sharedWith.find(
+    const alreadyShared = task.sharedWith?.find(
       (s) => s.user.toString() === userId
     );
 
     if (alreadyShared) {
-      alreadyShared.permission = permission || "view";
+      // Update existing share permission
+      await Task.updateOne(
+        { _id: taskId, "sharedWith.user": userId },
+        { $set: { "sharedWith.$.permission": permission || "view" } }
+      );
     } else {
-      task.sharedWith.push({
-        user: userId,
-        permission: permission || "view",
-      });
+      // Add new share
+      await Task.updateOne(
+        { _id: taskId },
+        {
+          $push: {
+            sharedWith: {
+              user: userId,
+              permission: permission || "view",
+            },
+          },
+        }
+      );
     }
-
-    await task.save();
 
     res.json({ message: "Task shared successfully ✅" });
   } catch (err) {
@@ -171,21 +196,26 @@ exports.shareTask = async (req, res) => {
   }
 };
 
- // ================= ADD COMMENT =================
+// ================= ADD COMMENT =================
 exports.addComment = async (req, res) => {
   try {
-    const task = await Task.findById(req.params.id);
+    // Use atomic update for better performance
+    const task = await Task.findByIdAndUpdate(
+      req.params.id,
+      {
+        $push: {
+          comments: {
+            user: req.user.id,
+            text: req.body.text,
+          },
+        },
+      },
+      { new: true }
+    ).populate("comments.user", "name email");
 
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
     }
-
-    task.comments.push({
-      user: req.user.id,
-      text: req.body.text,
-    });
-
-    await task.save();
 
     res.json(task.comments);
   } catch (err) {
@@ -194,14 +224,13 @@ exports.addComment = async (req, res) => {
   }
 };
 
-
 //get comments
 exports.getComments = async (req, res) => {
   try {
-    const task = await Task.findById(req.params.id).populate(
-      "comments.user",
-      "name email"
-    );
+    const task = await Task.findById(req.params.id)
+      .populate("comments.user", "name email")
+      .lean()
+      .exec();
 
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
@@ -215,12 +244,15 @@ exports.getComments = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-   
+
 // ================= PROFILE =================
 
 exports.getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
+    const user = await User.findById(req.user.id)
+      .select("-password")
+      .lean()
+      .exec();
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
